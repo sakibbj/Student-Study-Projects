@@ -11,4 +11,14 @@ urlpatterns = [
 
     #homework
     path('homework/', views.homework, name='homework'),
+    path('homework/update/<int:pk>/', views.update_homework, name='update_homework'),
+    path('homework/delete/<int:pk>/', views.delete_homework, name='delete_homework'),
+
+    #Youtube
+    path('youtube/', views.youtube, name='youtube'),
+
+    #todo app
+    path('todo/', views.TodoApp, name='todo'),
+    path('todo/update/<int:pk>/', views.update_todo, name='update_todo'),
+    path('todo/delete/<int:pk>/', views.delete_todo, name='delete_todo'),
 ]
