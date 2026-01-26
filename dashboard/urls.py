@@ -21,4 +21,11 @@ urlpatterns = [
     path('todo/', views.TodoApp, name='todo'),
     path('todo/update/<int:pk>/', views.update_todo, name='update_todo'),
     path('todo/delete/<int:pk>/', views.delete_todo, name='delete_todo'),
+
+    #books app
+    path('books/', views.books, name='books'),
+
+    #Dictionary app
+    path('dictionary/', views.Dictionary, name='dictionary'),
+    
 ]

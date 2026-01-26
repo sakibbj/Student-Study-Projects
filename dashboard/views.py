@@ -4,6 +4,7 @@ from .forms import *
 from django.contrib import messages
 from django.views import generic
 from youtube_search import YoutubeSearch
+import requests
 
 # Create your views here.
 def home(request):
@@ -170,3 +171,79 @@ def delete_todo(request, pk):
     return redirect('todo')
 
 
+def books(request):
+    if request.method == 'POST':
+        form = DashboardForm(request.POST)
+        text = request.POST.get('text')
+
+        url = f"https://www.googleapis.com/books/v1/volumes?q={text}"
+        r = requests.get(url)
+        answer = r.json()
+
+        result_list = []
+        items = answer.get('items', [])
+
+        for item in items[:10]:
+            volume = item.get('volumeInfo', {})
+            result_list.append({
+                'title': volume.get('title'),
+                'subtitle': volume.get('subtitle'),
+                'description': volume.get('description'),
+                'count': volume.get('pageCount'),
+                'categories': volume.get('categories'),
+                'rating': volume.get('averageRating'),
+                'thumbnail': volume.get('imageLinks', {}).get('thumbnail'),
+                'preview': volume.get('previewLink'),
+            })
+
+        return render(request, 'dashboard/books.html', {
+            'form': form,
+            'results': result_list
+        })
+
+    form = DashboardForm()
+    return render(request, 'dashboard/books.html', {'form': form})
+
+
+def Dictionary(request):
+    if request.method == 'POST':
+        form = DashboardForm(request.POST)
+        text = request.POST.get('text')
+
+        if text:
+            url = "https://api.dictionaryapi.dev/api/v2/entries/en_US/" + text
+            r = requests.get(url)
+            answer = r.json()
+
+            try:
+                phonetics = answer[0]['phonetics'][0]['text']
+                audio = answer[0]['phonetics'][0]['audio']
+                definition = answer[0]['meanings'][0]['definitions'][0]['definition']
+                example = answer[0]['meanings'][0]['definitions'][0]['example']
+                synonyms = answer[0]['meanings'][0]['definitions'][0]['synonyms']
+
+                context = {
+                    'form': form,
+                    'input': text,
+                    'phonetics': phonetics,
+                    'audio': audio,
+                    'definition': definition,
+                    'example': example,
+                    'synonyms': synonyms,
+                }
+
+            except Exception:
+                context = {
+                    'form': form,
+                    'input': text,
+                    'error': 'Word not found'
+                }
+        else:
+            context = {
+                'form': form,
+                'input': '',
+            }
+        return render(request, 'dashboard/dictionary.html', context)
+
+    form = DashboardForm()
+    return render(request, 'dashboard/dictionary.html', {'form': form})
