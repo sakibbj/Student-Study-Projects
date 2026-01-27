@@ -25,3 +25,50 @@ class TodoForm(forms.ModelForm):
     class Meta:
         model = Todo
         fields = ['title', 'is_finished']
+
+
+class BaseConversionForm(forms.Form):
+    value = forms.FloatField(required=False, label=False, widget=forms.NumberInput(
+        attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter the Number'
+        }
+    ))
+    
+    measure1 = forms.ChoiceField(label='', widget=forms.Select(
+        attrs={'class': 'form-control'}
+    ))
+    measure2 = forms.ChoiceField(label='', widget=forms.Select(
+        attrs={'class': 'form-control'}
+    ))
+
+    CHOICES = []
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['measure1'].choices= self.CHOICES
+        self.fields['measure2'].choices= self.CHOICES
+
+
+class ConversionForm(forms.Form):
+    CHOICES = [
+        ('length', 'Length'),
+        ('mass', 'Mass')
+    ]
+    measurement = forms.ChoiceField(choices= CHOICES, widget=forms.RadioSelect)
+
+
+class ConversionLengthForm(BaseConversionForm):
+    CHOICES = [
+        ('yard', 'Yard'), 
+        ('foot', 'Foot')
+    ]
+
+        
+class ConversionMassForm(BaseConversionForm):
+    CHOICES = [
+        ('pound', 'Pound'), 
+        ('kilogram', 'Kilogram')
+    ]
+    
+    

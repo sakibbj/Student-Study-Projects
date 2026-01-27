@@ -27,5 +27,12 @@ urlpatterns = [
 
     #Dictionary app
     path('dictionary/', views.Dictionary, name='dictionary'),
+
+    #Wikipedia app
+    path('wikipedia/', views.Wikipedia, name='wikipedia'),
+
+    #Conversion app
+    path('conversion/', views.Conversion, name='conversion'),
+    
     
 ]
