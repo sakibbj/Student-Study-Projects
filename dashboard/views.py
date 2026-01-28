@@ -3,11 +3,9 @@ from .models import Notes, Homework, Todo
 from .forms import *
 from django.contrib import messages
 from django.views import generic
-from youtube_search import YoutubeSearch
 import requests, wikipedia
 from wikipedia.exceptions import DisambiguationError, PageError
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
 from googleapiclient.discovery import build
 
 
@@ -107,23 +105,29 @@ def youtube(request):
         form = DashboardForm(request.POST)
         if form.is_valid():
             text = form.cleaned_data['text']
-            youtube_api = build('youtube', 'v3', developerKey=settings.YOUTUBE_AP)
-            search_request = youtube_api.search().list(
+            youtube_api = build( 'youtube', 'v3', 
+                developerKey='AIzaSyB4zq6X5RsmlV704ettyBOZ8F0VVIR2ufE')
+            
+            response = youtube_api.search().list(
                 q=text,
                 part = 'snippet',
-                maxResults = 10,
-                type = 'video'
+                type = 'video',
+                maxResults = 10
             )
-            response = search_request.execute()
             
             for item in response.get('items', []):
+                video_id = item['id']['videoId']
+                snippet = item['snipped']
+
                 result_list.append({
-                    'title': item['snippet']['title'],
-                    'thumbnail': item['snippet']['thumbnails']['default']['url'],
-                    'channel': item['snippet'] ['channelTitle'],
-                    'link': f'https://www.youtube.com/watch?v={item['id']['videoId']}',
-                    'duration': '',
-                    'views': '',
+                    'title': snippet.get('title', ''),
+                    'thumbnail': snippet["thumbnails"]["medium"]["url"],
+                    'channel': snippet.get('channelTitle', ''),
+                    'link': f"https://www.youtube.com/watch?v={video_id}",
+                    'duration': 'N/A',
+                    'views': 'N/A',
+                    'published': snippet.get('publishedAt', ''),
+                    'description': snippet.get('description', ''),
                 })
 
     else:
