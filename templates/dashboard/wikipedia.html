@@ -7,7 +7,7 @@
     <p>just enter the search query to obtain the results</p><b>Enter without any space</b>
     <form action="" method="post">
         {% csrf_token %}
-        {{ form }}
+        <b>{{ form }}</b>
         <input class="btn btn-danger" type="submit" value="Submit">
     </form><br>
     {% if title %}
@@ -29,6 +29,13 @@
     </div>
     {% elif error %}
     <h3 class="text-danger mt-4"> {{ error }} </h3>
+    {% if options %}
+    <ul>
+        {% for option in options %}
+          <li>{{ option }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
     {% endif %}
 </section>
 

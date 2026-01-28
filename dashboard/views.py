@@ -5,11 +5,14 @@ from django.contrib import messages
 from django.views import generic
 from youtube_search import YoutubeSearch
 import requests, wikipedia
+from wikipedia.exceptions import DisambiguationError, PageError
+from django.contrib.auth.decorators import login_required
+
 
 # Create your views here.
 def home(request):
     return render(request, 'dashboard/home.html')
-
+@login_required
 def note(request):
     if request.method == 'POST':
         form = NotesForm(request.POST)
@@ -29,7 +32,7 @@ def note(request):
     }
     return render(request, 'dashboard/notes.html', context)
 
-
+@login_required
 def delete_note(request, pk=None):
     notes = get_object_or_404(Notes, pk=pk)
     notes.delete()
@@ -40,7 +43,7 @@ def delete_note(request, pk=None):
 class NoteDetailView(generic.DetailView):
     model = Notes
 
-
+@login_required
 def homework(request):
     if request.method == 'POST':
         form = HomeworkForm(request.POST)
@@ -79,7 +82,7 @@ def homework(request):
     }
     return render(request, 'dashboard/homework.html', context)
 
-
+@login_required
 def update_homework(request, pk):
     if request.method == 'POST':
         homework = get_object_or_404(Homework, pk=pk)
@@ -87,7 +90,7 @@ def update_homework(request, pk):
         homework.save()
     return redirect('homework')
 
-
+@login_required
 def delete_homework(request, pk):
     homework = get_object_or_404(Homework, pk=pk)
     homework.delete()
@@ -121,7 +124,7 @@ def youtube(request):
         'results': result_list
     }
     return render(request, 'dashboard/youtube.html', context)
-
+@login_required
 def TodoApp(request):
     if request.method == 'POST':
         form = TodoForm(request.POST)
@@ -155,7 +158,7 @@ def TodoApp(request):
         'todos_done': todos_done,
     }
     return render(request, 'dashboard/todo.html', context)
-
+@login_required
 def update_todo(request, pk):
     if request.method == 'POST':
         todo = get_object_or_404(Todo, pk=pk)
@@ -163,7 +166,7 @@ def update_todo(request, pk):
         todo.save()
         return redirect('todo')
     
-
+@login_required
 def delete_todo(request, pk):
     todo = get_object_or_404(Todo, pk=pk)
     todo.delete()
@@ -172,38 +175,42 @@ def delete_todo(request, pk):
 
 
 def books(request):
+    results = []
+    error = None
+
     if request.method == 'POST':
         form = DashboardForm(request.POST)
-        text = request.POST.get('text')
+        if form.is_valid():
+            text = form.cleaned_data['text']
 
-        url = f"https://www.googleapis.com/books/v1/volumes?q={text}"
-        r = requests.get(url)
-        answer = r.json()
+            url = f"https://www.googleapis.com/books/v1/volumes?q={text}&key=YOUR_API_KEY"
+            r = requests.get(url)
+            answer = r.json()
+            
+            if 'error' in answer:
+                error = "For Today Google Books API quota Ends."
+            else:
+                for item in answer.get('items', [])[:10]:
+                    volume = item.get('volumeInfo', {})
+                    results.append({
+                        'title': volume.get('title'),
+                        'subtitle': volume.get('subtitle'),
+                        'description': volume.get('description'),
+                        'count': volume.get('pageCount'),
+                        'categories': volume.get('categories'),
+                        'rating': volume.get('averageRating'),
+                        'thumbnail': volume.get('imageLinks', {}).get('thumbnail'),
+                        'preview': volume.get('previewLink'),
+                    })
+    
+    else:
+        form = DashboardForm()
 
-        result_list = []
-        items = answer.get('items', [])
-
-        for item in items[:10]:
-            volume = item.get('volumeInfo', {})
-            result_list.append({
-                'title': volume.get('title'),
-                'subtitle': volume.get('subtitle'),
-                'description': volume.get('description'),
-                'count': volume.get('pageCount'),
-                'categories': volume.get('categories'),
-                'rating': volume.get('averageRating'),
-                'thumbnail': volume.get('imageLinks', {}).get('thumbnail'),
-                'preview': volume.get('previewLink'),
-            })
-
-        return render(request, 'dashboard/books.html', {
-            'form': form,
-            'results': result_list
-        })
-
-    form = DashboardForm()
-    return render(request, 'dashboard/books.html', {'form': form})
-
+    return render(request, 'dashboard/books.html', {
+        'form': form,
+        'results': results,
+        'error': error,
+    })
 
 def Dictionary(request):
     if request.method == 'POST':
@@ -248,22 +255,30 @@ def Dictionary(request):
     form = DashboardForm()
     return render(request, 'dashboard/dictionary.html', {'form': form})
 
-
-def Wikipedia(request):
-    import wikipedia
-from wikipedia.exceptions import PageError, DisambiguationError
-
 def Wikipedia(request):
     if request.method == 'POST':
         form = DashboardForm(request.POST)
         text = request.POST['text']
-        search = wikipedia.page(text)
-        context = {
-            'form': form,
-            'title': search.title,
-            'link': search.url,
-            'details': search.summary,
-        }
+        try:
+            search = wikipedia.page(text)
+            context = {
+                'form': form,
+                'title': search.title,
+                'link': search.url,
+                'details': search.summary,
+            }
+        except DisambiguationError as e:
+            context = {
+                'form': form,
+                'error': "What Do You Mean?",
+                'options': e.options[:10]
+            }
+        
+        except PageError:
+            context = {
+                'form': form,
+                'error': "Nothing Found"
+            }
         return render(request, 'dashboard/wikipedia.html', context)
     else:
         form = DashboardForm()
@@ -320,61 +335,39 @@ def Conversion(request):
             
     return render(request, 'dashboard/conversion.html', context)
 
-    
 
-# def Conversion(request):
-#     if request.method == 'POST':
-#         form = ConversionForm(request.POST)
-#         if request.POST['measurement'] == 'length':
-#             measurement_form = ConversionLengthForm()
-#             context = {
-#                 'form': form,
-#                 'm_form': measurement_form,
-#                 'input': True
-#             }
-#             if 'input' in request.POST:
-#                 first = request.POST['measure1']
-#                 second = request.POST['measure2']
-#                 input = request.POST['input']
-#                 answer = ''
-#                 if input and int(input) >= 0:
-#                     if first == 'yard' and second == 'foot':
-#                         answer = f"{input} yard = {int(input)*3} foot"
-#                     if first == 'foot' and second == 'yard':
-#                         answer = f"{input} foot = {int(input)/3} yard"
-#                 context = {
-#                     'form': form,
-#                     'm_form': measurement_form,
-#                     'input': True,
-#                     'answer': answer,
-#                 }
-#         if request.POST['measurement'] == 'mass':
-#             measurement_form = ConversionMassForm()
-#             context = {
-#                 'form': form,
-#                 'm_form': measurement_form,
-#                 'input': True
-#             }
-#             if 'input' in request.POST:
-#                 first = request.POST['measure1']
-#                 second = request.POST['measure2']
-#                 input = request.POST['input']
-#                 answer = ''
-#                 if input and int(input) >= 0:
-#                     if first == 'pound' and second == 'kilogram':
-#                         answer = f"{input} pound = {int(input)*0.453592} kilogram"
-#                     if first == 'kilogram' and second == 'pound':
-#                         answer = f"{input} kilogram = {int(input)*2.20462} pound"
-#                 context = {
-#                     'form': form,
-#                     'm_form': measurement_form,
-#                     'input': True,
-#                     'answer': answer,
-#                 }
-#     else:
-#         form = ConversionForm()
-#         context = {
-#             'form': form,
-#             'input': False
-#         }
-#     return render(request, 'dashboard/conversion.html', context)
+
+def register(request):
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get('username')
+            messages.success(request, f"Welcome {username}! Your Account was created Successfully.")
+            return redirect('login')
+    else:    
+        form = RegistrationForm()
+    context = {
+        'form': form,
+    }
+    return render(request, 'dashboard/register.html', context)
+
+@login_required
+def profile(request):
+    homeworks = Homework.objects.filter(is_finished=False, user=request.user)
+    todos = Todo.objects.filter(is_finished=False, user=request.user)
+    if len(homeworks) == 0:
+        homework_done = True
+    else:
+        homework_done = False
+    if len(todos) == 0:
+        todos_done = True
+    else:
+        todos_done = False
+    context = {
+        'homeworks': homeworks,
+        'todos': todos,
+        'homework_done': homework_done,
+        'todos_done': todos_done
+    }
+    return render(request, 'dashboard/profile.html', context)

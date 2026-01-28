@@ -33,6 +33,5 @@ urlpatterns = [
 
     #Conversion app
     path('conversion/', views.Conversion, name='conversion'),
-    
-    
+
 ]
