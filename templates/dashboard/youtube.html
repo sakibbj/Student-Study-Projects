@@ -14,7 +14,6 @@
     {% for result in results %}
     {% if result.link %}
     <a href="{{ result.link }}" target="_blank" style="text-decoration: none; color: inherit;">
-        {% endif %}
         <div class="card mb-3">
             <div class="card-header">
                 <div class="row">
@@ -40,9 +39,7 @@
                 </div>
             </div>
         </div>
-        {% if result.link %}
     </a>
-    {% endif %}
     {% endfor %}
     {% else %}
     <p class="text-muted mt-4">No results found. Search something valid..</p>

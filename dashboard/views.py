@@ -7,6 +7,8 @@ from youtube_search import YoutubeSearch
 import requests, wikipedia
 from wikipedia.exceptions import DisambiguationError, PageError
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
+from googleapiclient.discovery import build
 
 
 # Create your views here.
@@ -105,16 +107,23 @@ def youtube(request):
         form = DashboardForm(request.POST)
         if form.is_valid():
             text = form.cleaned_data['text']
-            videos = YoutubeSearch(text, max_results=10).to_dict()
+            youtube_api = build('youtube', 'v3', developerKey=settings.YOUTUBE_AP)
+            search_request = youtube_api.search().list(
+                q=text,
+                part = 'snippet',
+                maxResults = 10,
+                type = 'video'
+            )
+            response = search_request.execute()
             
-            for video in videos:
+            for item in response.get('items', []):
                 result_list.append({
-                    'title': video.get('title', ''),
-                    'duration': video.get('duration', ''),
-                    'thumbnail': video.get('thumbnails', [''])[0],
-                    'channel': video.get('channel', ''),
-                    'link': 'https://www.youtube.com' + video.get('url_suffix', ''),
-                    'views': video.get('views', ''),
+                    'title': item['snippet']['title'],
+                    'thumbnail': item['snippet']['thumbnails']['default']['url'],
+                    'channel': item['snippet'] ['channelTitle'],
+                    'link': f'https://www.youtube.com/watch?v={item['id']['videoId']}',
+                    'duration': '',
+                    'views': '',
                 })
 
     else:
