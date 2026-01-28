@@ -10,10 +10,8 @@
         <button class="btn btn-danger mt-2" type="submit">Search</button>
     </form><br>
 
-    {% if results %}
+{% if results %}
     {% for result in results %}
-    {% if result.link %}
-    <a href="{{ result.link }}" target="_blank" style="text-decoration: none; color: inherit;">
         <div class="card mb-3">
             <div class="card-header">
                 <div class="row">
@@ -35,11 +33,14 @@
                             <h6 class="ml-0 mt-1">{{result.views}}</h6>
                             <h6 class="ml-0 mt-1">{{result.published}}</h6>
                         </b>
+                        {% if result.link %}
+                            <a href="{{ result.link }}" target="_blank" 
+                            style="text-decoration: none; color: inherit;">Watch on Youtube</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
-    </a>
     {% endfor %}
     {% else %}
     <p class="text-muted mt-4">No results found. Search something valid..</p>
