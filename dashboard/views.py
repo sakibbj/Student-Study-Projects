@@ -105,19 +105,19 @@ def youtube(request):
         form = DashboardForm(request.POST)
         if form.is_valid():
             text = form.cleaned_data['text']
-            youtube_api = build( 'youtube', 'v3', 
+            youtube_api = build( 'youtube', 'v3',
                 developerKey='AIzaSyB4zq6X5RsmlV704ettyBOZ8F0VVIR2ufE')
-            
+
             response = youtube_api.search().list(
                 q=text,
                 part = 'snippet',
                 type = 'video',
                 maxResults = 10
-            )
-            
+            ).execute()
+
             for item in response.get('items', []):
                 video_id = item['id']['videoId']
-                snippet = item['snipped']
+                snippet = item['snippet']
 
                 result_list.append({
                     'title': snippet.get('title', ''),
@@ -178,7 +178,7 @@ def update_todo(request, pk):
         todo.is_finished = not todo.is_finished
         todo.save()
         return redirect('todo')
-    
+
 @login_required
 def delete_todo(request, pk):
     todo = get_object_or_404(Todo, pk=pk)
@@ -199,7 +199,7 @@ def books(request):
             url = f"https://www.googleapis.com/books/v1/volumes?q={text}&key=YOUR_API_KEY"
             r = requests.get(url)
             answer = r.json()
-            
+
             if 'error' in answer:
                 error = "For Today Google Books API quota Ends."
             else:
@@ -215,7 +215,7 @@ def books(request):
                         'thumbnail': volume.get('imageLinks', {}).get('thumbnail'),
                         'preview': volume.get('previewLink'),
                     })
-    
+
     else:
         form = DashboardForm()
 
@@ -286,7 +286,7 @@ def Wikipedia(request):
                 'error': "What Do You Mean?",
                 'options': e.options[:10]
             }
-        
+
         except PageError:
             context = {
                 'form': form,
@@ -299,7 +299,7 @@ def Wikipedia(request):
             'form': form,
         }
         return render(request, 'dashboard/wikipedia.html', context)
-    
+
 
 
 def Conversion(request):
@@ -324,7 +324,7 @@ def Conversion(request):
 
             context['m_form'] = m_form
 
-            if m_form.is_valid():    
+            if m_form.is_valid():
                 value = m_form.cleaned_data['value']
                 first = m_form.cleaned_data['measure1']
                 second = m_form.cleaned_data['measure2']
@@ -344,8 +344,8 @@ def Conversion(request):
                         elif first == 'kilogram' and second == 'pound':
                             context['answer'] = f"{value} kilogram = { value * 2.20462} pound"
                         else:
-                            context['answer'] = "Same unit Selected"      
-            
+                            context['answer'] = "Same unit Selected"
+
     return render(request, 'dashboard/conversion.html', context)
 
 
@@ -358,7 +358,7 @@ def register(request):
             username = form.cleaned_data.get('username')
             messages.success(request, f"Welcome {username}! Your Account was created Successfully.")
             return redirect('login')
-    else:    
+    else:
         form = RegistrationForm()
     context = {
         'form': form,
