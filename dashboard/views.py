@@ -195,26 +195,30 @@ def books(request):
         form = DashboardForm(request.POST)
         if form.is_valid():
             text = form.cleaned_data['text']
-
-            url = f"https://www.googleapis.com/books/v1/volumes?q={text}&key=YOUR_API_KEY"
-            r = requests.get(url)
-            answer = r.json()
-
-            if 'error' in answer:
-                error = "For Today Google Books API quota Ends."
+            if not text.strip():
+                error = "Please write anything if you want!"
             else:
-                for item in answer.get('items', [])[:10]:
-                    volume = item.get('volumeInfo', {})
-                    results.append({
-                        'title': volume.get('title'),
-                        'subtitle': volume.get('subtitle'),
-                        'description': volume.get('description'),
-                        'count': volume.get('pageCount'),
-                        'categories': volume.get('categories'),
-                        'rating': volume.get('averageRating'),
-                        'thumbnail': volume.get('imageLinks', {}).get('thumbnail'),
-                        'preview': volume.get('previewLink'),
-                    })
+                url = f"https://www.googleapis.com/books/v1/volumes?q={text}&key=AIzaSyDsM5obgJ65BCLrcu2lT_S9dQaeNXsbQ4w"
+                r = requests.get(url)
+                answer = r.json()
+
+                if 'error' in answer:
+                    error = answer['error'].get('message', "Google Books API error")
+                elif 'items' in answer:
+                    for item in answer['items'][:10]:
+                        volume = item.get('volumeInfo', {})
+                        results.append({
+                            'title': volume.get('title'),
+                            'subtitle': volume.get('subtitle'),
+                            'description': volume.get('description'),
+                            'count': volume.get('pageCount'),
+                            'categories': volume.get('categories'),
+                            'rating': volume.get('averageRating'),
+                            'thumbnail': volume.get('imageLinks', {}).get('thumbnail'),
+                            'preview': volume.get('previewLink'),
+                        })
+                else:
+                    error = "Nothing Found"
 
     else:
         form = DashboardForm()
